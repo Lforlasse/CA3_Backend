@@ -29,7 +29,7 @@ import utils.EMF_Creator;
  */
 @Path("info")
 public class DemoResource {
-    
+
     private static final EntityManagerFactory EMF = EMF_Creator.createEntityManagerFactory();
     @Context
     private UriInfo context;
@@ -51,7 +51,7 @@ public class DemoResource {
 
         EntityManager em = EMF.createEntityManager();
         try {
-            TypedQuery<User> query = em.createQuery ("select u from User u",entities.User.class);
+            TypedQuery<User> query = em.createQuery("select u from User u", entities.User.class);
             List<User> users = query.getResultList();
             return "[" + users.size() + "]";
         } finally {
@@ -75,6 +75,29 @@ public class DemoResource {
     public String getFromAdmin() {
         String thisuser = securityContext.getUserPrincipal().getName();
         return "{\"msg\": \"Hello to (admin) User: " + thisuser + "\"}";
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("fetchcustom")
+    public String fetchCustomEndpoint() throws ExecutionException, InterruptedException {
+        ExecutorService executor = Executors.newFixedThreadPool(5);
+        List<APIFetcher> apifetchers = new ArrayList<>();
+        List<Future<String>> futures = new ArrayList<>();
+        List<String> results = new ArrayList<>();
+
+        apifetchers.add(new APIFetcher("https://swapi.dev/api/people/"));
+
+        for (APIFetcher fetcher : apifetchers) {
+            Future<String> future = executor.submit(fetcher);
+            futures.add(future);
+        }
+
+        for (Future<String> future : futures) {
+            results.add(future.get());
+        }
+
+        return new Gson().toJson(results);
     }
 
     @GET
